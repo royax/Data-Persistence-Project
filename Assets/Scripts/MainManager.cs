@@ -3,14 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
+    
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text BestScoreText;
+
+    public InputField NameInput;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -18,10 +23,16 @@ public class MainManager : MonoBehaviour
     
     private bool m_GameOver = false;
 
+    //private int bestScore;
+    //private string bestName;
+    private BestScore bestScore;
+
     
     // Start is called before the first frame update
     void Start()
     {
+        LoadScore();
+        BestScoreText.text = $"Best Score: {bestScore.Name}: {bestScore.Score}";
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -36,6 +47,22 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        
+    }
+
+    private void LoadScore()
+    {
+        string path = Application.persistentDataPath + "/bestscore.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            bestScore = JsonUtility.FromJson<BestScore>(json);
+        }
+        else
+        {
+            bestScore = new BestScore();
+        }
+     
     }
 
     private void Update()
@@ -66,11 +93,57 @@ public class MainManager : MonoBehaviour
     {
         m_Points += point;
         ScoreText.text = $"Score : {m_Points}";
+        //if (m_Points > bestScore.Score)
+        //{
+        //    BestScoreText.text = $"Best Score: YOU: {m_Points}";
+        //}
+    }
+
+    private void ShowBestScore()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public void OnNameEnter()
+    {
+        bestScore.Name = NameInput.text;
+        bestScore.Score = m_Points;
+        SaveScore();
+        NameInput.gameObject.SetActive(false);
+        m_GameOver = true;
+        GameOverText.SetActive(true);
     }
 
     public void GameOver()
     {
+
+
+        if (m_Points > bestScore.Score)
+        {
+            NameInput.gameObject.SetActive(true);
+            NameInput.ActivateInputField();
+
+
+        }
+        else
+        {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        }
+        
+
+    }
+
+    private void SaveScore()
+    {
+        string json = JsonUtility.ToJson(bestScore);
+        File.WriteAllText(Application.persistentDataPath+ "/bestscore.json", json);
+    }
+
+    [System.Serializable]
+     class BestScore
+    {
+       public  string Name;
+       public  int Score;
     }
 }
